@@ -116,84 +116,119 @@ def game_hash
   game
 end
 
+#combines the two player arrays into 1 array
+def player_helper(game_hash)
+  game_hash[:home][:players].concat(game_hash[:away][:players]) 
+end
+
+def player_stats_helper(player_name)
+  player_helper(game_hash).each do |stats_hash| 
+    if stats_hash[:player_name] === player_name 
+     return stats_hash
+    end
+  end
+end
+
+#selects through each player hash
+#if a players name matches our given name, it returns that players stats
+def player_stats(player_name)
+  player_helper(game_hash).each do |stats_hash| 
+    if stats_hash[:player_name] === player_name 
+      stats_hash.delete(:player_name)
+     return stats_hash
+    end
+  end
+end
+
+#this function finds the player with the largest value from a key
+#returns the entire player stats hash to allow for more usability
+def player_with_biggest(key_youre_compairing) 
+  largest = 0
+  stats_hash = nil
+  player_helper(game_hash).map do |data|
+    if largest < data[key_youre_compairing]
+      largest = data[key_youre_compairing]
+      stats_hash = data
+    end
+  end
+  return stats_hash 
+end
+
+#takes a team name, and returns the :home or :away hash
+def team_helper(team)
+  game_hash.map {|key, value| if value[:team_name] === team 
+      return value end }
+end
+
 def num_points_scored(player_name)
-  pointsScored = nil
-  game_hash.each {|keyName, values|
-   values[:players].each {|player, num|
-   if player[:player_name] == player_name
-     pointsScored = player[:points]
-   end
-   }
-  }
-  pointsScored
+  player_stats_helper(player_name)[:points]
 end
 
 def shoe_size(player_name)
- shoeSize = nil
-  game_hash.each {|keyName, values|
-   values[:players].each {|player, num|
-   if player[:player_name] == player_name
-     shoeSize = player[:shoe]
-   end
-   }
-  }
-  shoeSize
+  player_stats_helper(player_name)[:shoe]
 end
 
-def team_colors(teamName)
-  colors = nil
-   game_hash.each {|keyName, values|
-     if values[:team_name] == teamName
-       colors = values[:colors]
-     end
-   }
-  colors
+def team_colors(team)
+  team_helper(team)[:colors]
 end
-
 
 def team_names
-  names = []
-  game_hash.each {|keyName, values|
-  names << values[:team_name]
-  }
-  names
+  [game_hash[:home][:team_name], game_hash[:away][:team_name]]
 end
 
-def player_numbers(teamName)
- jerseyNum = []
-  game_hash.each {|keyName, values|
-   if values[:team_name] == teamName
-     values[:players].each {|player, num|
-     jerseyNum << player[:number]
-     }
-   end
-  }
- jerseyNum
+#returns a list of the player numbers from a given team name
+def player_numbers(team)
+  team_helper(team)[:players].map {|player_stats| player_stats[:number]}
 end
 
-def player_stats(player_name)
-  stats = nil
-   game_hash.each {|keyName, values|
-    values[:players].each {|player, num|
-     if player[:player_name] == player_name
-       player.delete(:player_name)
-      stats = player
-     end
-    }
-   }
-  stats
-end 
-
+#uses player_with_biggest to find what player has the biggest shoes, then returns their rebounds
 def big_shoe_rebounds
-  shoe = 0
-  rebounds = 0
-  game_hash.each {|keyName, values|
-    values[:players].each {|player|
-      if player[:shoe] > big_shoe
-        big_shoe = player[:shoe]
-        rebounds = player[:rebounds]
-      end
-    }
-  }
-  rebounds
+  return player_with_biggest(:shoe)[:rebounds]
+end
+
+def most_points_scored
+ return player_with_biggest(:points)[:player_name]
+end
+
+#totals the points of a particular team
+#increases the running total with every player passed
+def team_total_points(home_or_away) 
+  total = 0
+  i = 0
+  while i < game_hash[home_or_away][:players].count
+    total += game_hash[home_or_away][:players][i][:points] 
+    i+=1
+  end
+  return total
+end
+
+#compaires the point totals for each team returned from team_total_points
+def winning_team
+  if team_total_points(:home) > team_total_points(:away) 
+    return game_hash[:home][:team_name]
+  end
+  return game_hash[:away][:team_name]
+end
+
+#exact same as 'player_with_biggest' but had to allow for '.length' to get an int from the string
+def player_with_longest_name 
+  largest = 0
+  player_hash = nil
+  player_helper(game_hash).map do |data|
+    if largest < data[:player_name].length
+      largest = data[:player_name].length
+      player_hash = data
+    end
+  end
+  return player_hash[:player_name]
+end
+  
+  
+  #this function uses 'player_with_biggest' to see if "Bismack Biyombo" had the most steals.
+  #by using player_stats we can grab player_with_longest_name's amount of steals and compare it to the player with the most
+def long_name_steals_a_ton? 
+  if player_with_biggest(:steals)[:steals] === player_stats_helper(player_with_longest_name())[:steals]
+    return true 
+  end
+  return false 
 end
